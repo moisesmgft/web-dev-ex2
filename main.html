@@ -2,17 +2,29 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no">
     <title>Missile Game</title>
     <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100%;
+            cursor: url('assets/airplane.png') 10 10, auto;
+        }
         canvas {
-            border: 1px solid black;
+            display: block;
+        }
+        #toggleSound {
+            position: absolute;
+            top: 10px;
+            right: 10px;
         }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
-    <button id="toggleSound">Toggle Sound</button>
+    <canvas id="gameCanvas"></canvas>
+    <button id="toggleSound">Enable Sound</button>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
@@ -39,6 +51,46 @@
         let airplane = { x: canvas.width / 2, y: canvas.height / 2 };
         let missile = { x: 0, y: canvas.height, isFired: false };
 
+        // Main game loop
+        function gameLoop() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw airplane (cursor)
+            ctx.drawImage(airplaneImage, airplane.x - airplaneWidth / 2, airplane.y - airplaneHeight / 2, airplaneWidth, airplaneHeight);
+
+            // Draw missile
+            if (missile.isFired) {
+                // Calculate angle between missile and airplane
+                const dx = airplane.x - missile.x;
+                const dy = airplane.y - missile.y;
+                const angle = Math.atan2(dy, dx) + Math.PI;
+
+                // Rotate missile image to point towards the airplane
+                ctx.save();
+                ctx.translate(missile.x, missile.y);
+                ctx.rotate(angle);
+                ctx.drawImage(missileImage, -missileWidth / 2, -missileHeight / 2, missileWidth, missileHeight);
+                ctx.restore();
+
+                // Move missile towards airplane
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const speed = 5;
+                missile.x += (dx / distance) * speed;
+                missile.y += (dy / distance) * speed;
+
+                // Check for collision with airplane
+                if (distance < 10) {
+                    if (isSoundEnabled) {
+                        explosionSound.play();
+                    }
+                    missile.isFired = false;
+                }
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
         // Track mouse position
         canvas.addEventListener("mousemove", (e) => {
             const rect = canvas.getBoundingClientRect();
@@ -58,43 +110,20 @@
             }
         });
 
-        // Main game loop
-        function gameLoop() {
-            // Clear canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Draw airplane
-            ctx.drawImage(airplaneImage, airplane.x - airplaneWidth / 2, airplane.y - airplaneHeight / 2, airplaneWidth, airplaneHeight);
-
-            // Draw missile
-            if (missile.isFired) {
-                ctx.drawImage(missileImage, missile.x - missileWidth / 2, missile.y - missileHeight / 2, missileWidth, missileHeight);
-
-                // Move missile towards airplane
-                const dx = airplane.x - missile.x;
-                const dy = airplane.y - missile.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                const speed = 5;
-                missile.x += (dx / distance) * speed;
-                missile.y += (dy / distance) * speed;
-
-                // Check for collision with airplane
-                if (distance < 10) {
-                    if (isSoundEnabled) {
-                        explosionSound.play();
-                    }
-                    missile.isFired = false;
-                }
-            }
-
-            requestAnimationFrame(gameLoop);
-        }
-
         // Toggle sound
         toggleSoundButton.addEventListener("click", () => {
             isSoundEnabled = !isSoundEnabled;
             toggleSoundButton.textContent = isSoundEnabled ? "Disable Sound" : "Enable Sound";
         });
+
+        // Resize canvas to fill the entire window
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener("resize", resizeCanvas);
+        resizeCanvas();
 
         // Start the game loop
         gameLoop();
