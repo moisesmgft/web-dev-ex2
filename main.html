@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Missile Game</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <button id="toggleSound">Toggle Sound</button>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const toggleSoundButton = document.getElementById("toggleSound");
+        let isSoundEnabled = true;
+
+        // Load audio files
+        const explosionSound = new Audio("assets/explosion.mp3");
+        const missileSound = new Audio("assets/missile.mp3");
+
+        // Load images with adjusted sizes
+        const airplaneImage = new Image();
+        airplaneImage.src = "assets/airplane.png";
+        const airplaneWidth = 150;
+        const airplaneHeight = airplaneWidth * (1131/1697);
+
+        const missileImage = new Image();
+        missileImage.src = "assets/missile.png";
+        const missileWidth = 80;
+        const missileHeight = missileWidth * (525/1511);
+
+        // Define airplane and missile positions
+        let airplane = { x: canvas.width / 2, y: canvas.height / 2 };
+        let missile = { x: 0, y: canvas.height, isFired: false };
+
+        // Track mouse position
+        canvas.addEventListener("mousemove", (e) => {
+            const rect = canvas.getBoundingClientRect();
+            airplane.x = e.clientX - rect.left;
+            airplane.y = e.clientY - rect.top;
+        });
+
+        // Handle right-click to fire missile
+        canvas.addEventListener("contextmenu", (e) => {
+            e.preventDefault();
+            if (!missile.isFired) {
+                missile.x = 0;
+                missile.isFired = true;
+                if (isSoundEnabled) {
+                    missileSound.play();
+                }
+            }
+        });
+
+        // Main game loop
+        function gameLoop() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw airplane
+            ctx.drawImage(airplaneImage, airplane.x - airplaneWidth / 2, airplane.y - airplaneHeight / 2, airplaneWidth, airplaneHeight);
+
+            // Draw missile
+            if (missile.isFired) {
+                ctx.drawImage(missileImage, missile.x - missileWidth / 2, missile.y - missileHeight / 2, missileWidth, missileHeight);
+
+                // Move missile towards airplane
+                const dx = airplane.x - missile.x;
+                const dy = airplane.y - missile.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const speed = 5;
+                missile.x += (dx / distance) * speed;
+                missile.y += (dy / distance) * speed;
+
+                // Check for collision with airplane
+                if (distance < 10) {
+                    if (isSoundEnabled) {
+                        explosionSound.play();
+                    }
+                    missile.isFired = false;
+                }
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Toggle sound
+        toggleSoundButton.addEventListener("click", () => {
+            isSoundEnabled = !isSoundEnabled;
+            toggleSoundButton.textContent = isSoundEnabled ? "Disable Sound" : "Enable Sound";
+        });
+
+        // Start the game loop
+        gameLoop();
+    </script>
+</body>
+</html>
